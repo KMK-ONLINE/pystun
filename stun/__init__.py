@@ -97,9 +97,9 @@ def _initialize():
 
 
 def gen_tran_id():
-    a = ''.join(random.choice('0123456789ABCDEF') for i in range(32))
+    a = ''.join(random.choice('0123456789ABCDEF') for i in range(24))
     # return binascii.a2b_hex(a)
-    return a
+    return '2112A442' + a
 
 
 def stun_test(sock, host, port, source_ip, source_port, send_data=""):
