@@ -36,10 +36,12 @@ MessageIntegrity = '0008'
 ErrorCode = '0009'
 UnknownAttribute = '000A'
 ReflectedFrom = '000B'
+XorMappedAddressRequired = '0020'
 XorOnly = '0021'
 XorMappedAddress = '8020'
 ServerName = '8022'
 SecondaryAddress = '8050'  # Non standard extension
+OtherAddress = '802c'
 
 # types for a stun message
 BindRequestMsg = '0001'
@@ -62,6 +64,7 @@ dictAttrToVal = {'MappedAddress': MappedAddress,
                  'ReflectedFrom': ReflectedFrom,
                  'XorOnly': XorOnly,
                  'XorMappedAddress': XorMappedAddress,
+                 'XorMappedAddressRequired': XorMappedAddressRequired,
                  'ServerName': ServerName,
                  'SecondaryAddress': SecondaryAddress}
 
@@ -144,6 +147,17 @@ def stun_test(sock, host, port, source_ip, source_port, send_data=""):
             while len_remain:
                 attr_type = binascii.b2a_hex(buf[base:(base + 2)])
                 attr_len = int(binascii.b2a_hex(buf[(base + 2):(base + 4)]), 16)
+                # log.debug('Attr: %s', attr_type)
+                if attr_type == XorMappedAddress or attr_type == XorMappedAddressRequired:
+                    port = int(binascii.b2a_hex(buf[base + 6:base + 8]), 16) ^ 0x2112
+                    ip = ".".join([
+                        str(int(binascii.b2a_hex(buf[base + 8:base + 9]), 16) ^ 0x21),
+                        str(int(binascii.b2a_hex(buf[base + 9:base + 10]), 16) ^ 0x12),
+                        str(int(binascii.b2a_hex(buf[base + 10:base + 11]), 16) ^ 0xa4),
+                        str(int(binascii.b2a_hex(buf[base + 11:base + 12]), 16) ^ 0x42)
+                    ])
+                    retVal['ExternalIP'] = ip
+                    retVal['ExternalPort'] = port
                 if attr_type == MappedAddress:
                     port = int(binascii.b2a_hex(buf[base + 6:base + 8]), 16)
                     ip = ".".join([
@@ -164,7 +178,7 @@ def stun_test(sock, host, port, source_ip, source_port, send_data=""):
                     ])
                     retVal['SourceIP'] = ip
                     retVal['SourcePort'] = port
-                if attr_type == ChangedAddress:
+                if attr_type == ChangedAddress or attr_type == OtherAddress:
                     port = int(binascii.b2a_hex(buf[base + 6:base + 8]), 16)
                     ip = ".".join([
                         str(int(binascii.b2a_hex(buf[base + 8:base + 9]), 16)),
